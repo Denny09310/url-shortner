@@ -1,0 +1,33 @@
+@inject BottomSheetService BottomSheet
+
+<div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">Manage links</h1>
+
+    <div class="flex items-center gap-2">
+        <LumexButton As="a" Variant="Variant.Flat" Size="Size.Small" href="">
+            <StartContent>
+                <ChevronLeftIcon class="size-4" />
+            </StartContent>
+            <ChildContent>
+                Back
+            </ChildContent>
+        </LumexButton>
+
+        <LumexButton Variant="Variant.Flat" Size="Size.Small" @onclick="OpenBottomSheetAsync">
+            <StartContent>
+                <PlusIcon class="size-4" />
+            </StartContent>
+            <ChildContent>
+                Add link
+            </ChildContent>
+        </LumexButton>
+    </div>
+</div>
+
+@code
+{
+    private async Task OpenBottomSheetAsync()
+    {
+        await BottomSheet.OpenAsync<CreateLinkForm>();
+    }
+}

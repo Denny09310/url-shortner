@@ -1,0 +1,92 @@
+﻿<LumexCard FullWidth>
+    <LumexCardBody class="space-y-3">
+
+        <!-- Short link -->
+        <div class="font-mono text-sm break-all">
+            /@Link.ShortCode
+        </div>
+
+        <!-- Target -->
+        @if (_editing)
+        {
+            <LumexTextbox @bind-Value="_editValue" Size="Size.Small" Variant="InputVariant.Flat"
+                Behavior="InputBehavior.OnInput" AutoFocus @onblur="CommitAsync" @onkeydown="HandleKeyDown" />
+        }
+        else
+        {
+            <button class="text-default-500 w-full text-left text-xs break-all hover:underline" @onclick="BeginEdit">
+                @Link.TargetUrl
+            </button>
+        }
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between pt-2">
+
+            <span class="text-default-400 text-xs">
+                @Link.CreatedAt.ToLocalTime().ToShortDateString()
+            </span>
+
+            <div class="flex items-center gap-2">
+                <LumexButton Variant="Variant.Light" Size="Size.Small"
+                    OnClick="() => OnCopy.InvokeAsync(Link.TargetUrl)">
+                    Copy
+                </LumexButton>
+
+                <LumexButton Variant="Variant.Flat" Color="ThemeColor.Danger" Size="Size.Small"
+                    OnClick="() => OnDelete.InvokeAsync(Link.Id)">
+                    Delete
+                </LumexButton>
+            </div>
+        </div>
+
+    </LumexCardBody>
+</LumexCard>
+
+@code
+{
+    [Parameter, EditorRequired] public LinkDto Link { get; set; }
+
+    [Parameter] public EventCallback<Guid> OnDelete { get; set; }
+    [Parameter] public EventCallback<string> OnCopy { get; set; }
+
+    [Parameter] public EventCallback<(Guid Id, string TargetUrl)> OnEdit { get; set; }
+
+    private bool _editing;
+    private string? _editValue;
+
+    private void BeginEdit()
+    {
+        _editing = true;
+        _editValue = Link.TargetUrl;
+    }
+
+    private async Task CommitAsync()
+    {
+        if (!_editing)
+            return;
+
+        _editing = false;
+
+        var newValue = _editValue?.Trim();
+
+        if (string.IsNullOrWhiteSpace(newValue) || newValue == Link.TargetUrl)
+            return;
+
+        await OnEdit.InvokeAsync((Link.Id, newValue));
+    }
+
+    private void CancelEdit()
+    {
+        _editing = false;
+        _editValue = Link.TargetUrl;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await CommitAsync();
+
+        if (e.Key == "Escape")
+            CancelEdit();
+    }
+}

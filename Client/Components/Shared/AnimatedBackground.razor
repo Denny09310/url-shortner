@@ -1,0 +1,18 @@
+﻿@inject IJSRuntime JS
+
+<div id="@_id" class="absolute inset-0 -z-10"></div>
+
+@code
+{
+    private readonly string _id = $"particles-{Guid.NewGuid().ToString("N")}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await using var module = await JS.InvokeAsync<IJSObjectReference>(
+        "import", "./Components/Shared/AnimatedBackground.razor.js");
+
+        await module.InvokeVoidAsync("initialize", _id);
+    }
+}

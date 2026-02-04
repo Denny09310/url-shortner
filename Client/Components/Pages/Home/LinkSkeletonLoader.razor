@@ -1,0 +1,18 @@
+﻿@for (var i = 0; i < 5; i++)
+{
+    <div class="flex items-center justify-between py-4">
+        <div class="w-full space-y-1">
+            <LumexSkeleton class="w-32 rounded-md">
+                <div class="bg-default-300 h-4 w-32 rounded-md" />
+            </LumexSkeleton>
+
+            <LumexSkeleton class="w-4/5 rounded-md">
+                <div class="bg-default-200 h-3 w-4/5 rounded-md" />
+            </LumexSkeleton>
+        </div>
+
+        <LumexSkeleton class="w-16 rounded-md">
+            <div class="bg-default-200 h-2 w-16 rounded-md" />
+        </LumexSkeleton>
+    </div>
+}

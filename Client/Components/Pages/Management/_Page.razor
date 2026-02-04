@@ -1,0 +1,106 @@
+﻿@page "/management"
+@inherits StatefulComponentBase
+
+@inject ToastService Toast
+@inject Clipboard Clipboard
+@inject ManagementState State
+
+<div class="flex min-h-screen justify-center p-4">
+
+    <section class="w-full max-w-3xl space-y-4">
+
+        <!-- Header -->
+        <Header  />
+
+        <LumexTextbox @bind-Value="State.Search" @bind-Value:after="LoadAsync"
+                      Placeholder="Search links…"
+                      Behavior="InputBehavior.OnInput"
+                      DebounceDelay="500"
+                      Clearable>
+            <StartContent>
+                <SearchIcon class="size-4" />
+            </StartContent>
+        </LumexTextbox>
+
+        <!-- Content -->
+        @if (_loading)
+        {
+            <LinkSkeletonLoader />
+        }
+        else if (Links?.Count == 0)
+        {
+            <LumexCard>
+                <LumexCardBody class="text-default-500 text-center text-sm">
+                    No links found.
+                </LumexCardBody>
+            </LumexCard>
+        }
+        else
+        {
+            <div class="space-y-3">
+                @foreach (var link in Links!)
+                {
+                    <EditableLinkItem @key="link.Id"
+                                      Link="@link"
+                                      OnDelete="DeleteAsync"
+                                      OnCopy="CopyAsync"
+                                      OnEdit="EditAsync" />
+                }
+            </div>
+        }
+
+    </section>
+
+</div>
+
+@code
+{
+    private bool _loading;
+
+    private IReadOnlyList<LinkDto>? Links => State.Links;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Track(State);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _loading = true;
+            await State.PopulateAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CopyAsync(string targetUrl)
+    {
+        await Clipboard.WriteTextAsync(targetUrl);
+        Toast.Success("Copied to clipboard.");
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        var result = await State.DeleteAsync(id);
+
+        if (result == StateResult.Failure)
+            Toast.Error("Failed to delete link.");
+        else
+            Toast.Success("Link deleted.");
+    }
+
+    private async Task EditAsync((Guid, string) data)
+    {
+        var result = await State.EditAsync(data.Item1, data.Item2);
+
+        if (result == StateResult.Failure)
+            Toast.Error("Failed to update link.");
+        else
+            Toast.Success("Link updated.");
+    }
+}

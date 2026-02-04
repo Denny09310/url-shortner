@@ -1,0 +1,19 @@
+﻿<div class="flex items-center justify-between py-4">
+    <div>
+        <LumexLink Href="@($"redirect/{Link.ShortCode}")" Class="font-mono" External>
+            /@Link.ShortCode
+        </LumexLink>
+        <div class="max-w-xl truncate text-sm">
+            @Link.TargetUrl
+        </div>
+    </div>
+
+    <span class="text-xs">
+        @Link.CreatedAt.ToLocalTime().ToShortDateString()
+    </span>
+</div>
+
+@code
+{
+    [EditorRequired, Parameter] public LinkDto Link { get; set; }
+}

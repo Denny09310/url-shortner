@@ -1,0 +1,66 @@
+﻿@namespace Client.Components.Shared
+@implements IAsyncDisposable
+
+@inject BottomSheetService Service
+@inject NavigationManager Navigation
+
+<BottomSheet @ref="_sheet">
+    @_content
+</BottomSheet>
+
+@code
+{
+    private BottomSheet _sheet = default!;
+    private RenderFragment? _content;
+
+    private bool _open;
+
+    protected override void OnInitialized()
+    {
+        Service.OpenRequestedAsync += OnOpenRequestedAsync;
+        Service.CloseRequestedAsync += OnCloseRequestedAsync;
+
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Service.OpenRequestedAsync -= OnOpenRequestedAsync;
+        Service.CloseRequestedAsync -= OnCloseRequestedAsync;
+
+        Navigation.LocationChanged -= OnLocationChanged;
+
+        await _sheet.DisposeAsync();
+
+        GC.SuppressFinalize(this);
+    }
+
+    private async Task OnOpenRequestedAsync(RenderFragment content)
+    {
+        _content = content;
+        _open = true;
+
+        await _sheet.ShowAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private async Task OnCloseRequestedAsync()
+    {
+        if (!_open)
+        {
+            return;
+        }
+
+        _content = null;
+        _open = false;
+
+        await _sheet.HideAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _ = OnCloseRequestedAsync();
+    }
+}

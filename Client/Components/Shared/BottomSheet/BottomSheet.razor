@@ -1,0 +1,90 @@
+﻿@namespace Client.Components.Shared
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div @ref="element" class="bottom-sheet">
+    <div class="bottom-sheet-overlay"></div>
+    <div class="bottom-sheet-content">
+        <div class="bottom-sheet-header">
+            <div class="bottom-sheet-drag-icon"></div>
+        </div>
+        <div class="bottom-sheet-body">
+            @ChildContent
+        </div>
+    </div>
+</div>
+
+@code
+{
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+
+    private ElementReference element;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<BottomSheet>? instance;
+
+    private bool? _Open;
+
+    public async ValueTask DisposeAsync()
+    {
+        await HideAsync();
+
+        try
+        {
+            if (module is not null)
+            {
+                await module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // expected
+        }
+
+        instance?.Dispose();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // import & initialize
+            var jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import",
+                "./Components/Shared/BottomSheet/BottomSheet.razor.js");
+
+            instance = DotNetObjectReference.Create(this);
+            module = await jsModule.InvokeAsync<IJSObjectReference>("initialize", element, instance);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Only sync if module is ready and Open actually changed
+        if (module is not null && _Open != Open)
+        {
+            await SyncOpenState();
+        }
+    }
+
+    private async Task SyncOpenState()
+    {
+        if (Open) await ShowAsync();
+        else await HideAsync();
+
+        _Open = Open;
+    }
+
+    public ValueTask ShowAsync() => module?.InvokeVoidAsync("show") ?? ValueTask.CompletedTask;
+
+    public ValueTask HideAsync() => module?.InvokeVoidAsync("hide") ?? ValueTask.CompletedTask;
+
+    [JSInvokable]
+    public async Task NotifyCloseRequested()
+    {
+        // Called by JS when user drags to dismiss, clicks overlay, etc.
+        _Open = Open = false;
+        await OpenChanged.InvokeAsync(false);
+    }
+}
